@@ -1,9 +1,19 @@
-// °üº¬Í·ÎÄ¼þ
+// ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "jfif.h"
 #include "bmp.h"
+
+#define savefile(name, buffer, size) do\
+{\
+  FILE *out = fopen(name, "wb");\
+  if(out != NULL)\
+  {\
+        fwrite (buffer , sizeof(char), size, out);\
+        fclose (out);\
+  }\
+} while(0)
 
 int main(int argc, char *argv[])
 {
@@ -31,6 +41,16 @@ int main(int argc, char *argv[])
         bmp_free(&bmp);
         jfif_save(jfif, "encode.jpg");
         jfif_free(jfif);
+    }
+    else if (strcmp(argv[1], "-db") == 0) {
+        uint8_t* data;
+        int w = 0;
+        int h = 0;
+        jfif = jfif_load(argv[2]);
+        jfif_decode_rgb(jfif, &data, &w, &h);
+        jfif_free  (jfif);
+        savefile("decode.bin", data, w*h*3);
+        free(data);
     }
 
     return 0;

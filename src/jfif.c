@@ -1,4 +1,4 @@
-/* °üº¬Í·ÎÄ¼þ */
+/* ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,10 +12,10 @@
 #include "color.h"
 #include "jfif.h"
 
-// Ô¤±àÒë¿ª¹Ø
+// Ô¤ï¿½ï¿½ï¿½ë¿ªï¿½ï¿½
 #define DEBUG_JFIF  0
 
-// ÄÚ²¿ÀàÐÍ¶¨Òå
+// ï¿½Ú²ï¿½ï¿½ï¿½ï¿½Í¶ï¿½ï¿½ï¿½
 typedef struct {
     // width & height
     int       width;
@@ -45,7 +45,7 @@ typedef struct {
     BYTE *databuf;
 } JFIF;
 
-/* ÄÚ²¿º¯ÊýÊµÏÖ */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ */
 #if DEBUG_JFIF
 static void jfif_dump(JFIF *jfif)
 {
@@ -133,7 +133,7 @@ static int category_decode(int code, int  size)
     return code >= (1 << (size - 1)) ? code : code - (1 << size) + 1;
 }
 
-/* º¯ÊýÊµÏÖ */
+/* ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ */
 void* jfif_load(char *file)
 {
     JFIF *jfif   = NULL;
@@ -534,6 +534,7 @@ int jfif_decode(void *ctxt, BMP *pb)
     bmp_create(pb, jfif->width, jfif->height);
     bdst = (BYTE*)pb->pdata;
     ysrc = yuv_datbuf[0];
+
     for (i=0; i<jfif->height; i++) {
         int uy = i * jfif->comp_info[1].samp_factor_v / sfv_max;
         int vy = i * jfif->comp_info[2].samp_factor_v / sfv_max;
@@ -857,8 +858,403 @@ done:
 }
 
 
+int jfif_decode_bgr(void *ctxt, uint8_t **data, int *width, int *height)
+{
+    JFIF *jfif    = (JFIF*)ctxt;
+    void *bs      = NULL;
+    int  *ftab[16]= {0};
+    int   dc[4]   = {0};
+    int   mcuw, mcuh, mcuc, mcur, mcui, jw, jh;
+    int   i, j, c, h, v, x, y;
+    int   sfh_max = 0;
+    int   sfv_max = 0;
+    int   yuv_stride[4] = {0};
+    int   yuv_height[4] = {0};
+    int  *yuv_datbuf[4] = {0};
+    int  *idst, *isrc;
+    int  *ysrc, *usrc, *vsrc;
+    int   ret = -1;
+
+    if (!ctxt) {
+        printf("invalid input params !\n");
+        return -1;
+    }
+
+    // init dct module
+    init_dct_module();
+
+    //++ init ftab
+    for (i=0; i<16; i++) {
+        if (jfif->pqtab[i]) {
+            ftab[i] = malloc(64 * sizeof(int));
+            if (ftab[i]) {
+                init_idct_ftab(ftab[i], jfif->pqtab[i]);
+            } else {
+                goto done;
+            }
+        }
+    }
+    //-- init ftab
+
+    //++ calculate mcu info
+    for (c=0; c<jfif->comp_num; c++) {
+        if (sfh_max < jfif->comp_info[c].samp_factor_h) {
+            sfh_max = jfif->comp_info[c].samp_factor_h;
+        }
+        if (sfv_max < jfif->comp_info[c].samp_factor_v) {
+            sfv_max = jfif->comp_info[c].samp_factor_v;
+        }
+    }
+    if (!sfh_max) sfh_max = 1;
+    if (!sfv_max) sfv_max = 1;
+    mcuw = sfh_max * 8;
+    mcuh = sfv_max * 8;
+    jw = ALIGN(jfif->width , mcuw);
+    jh = ALIGN(jfif->height, mcuh);
+    mcuc = jw / mcuw;
+    mcur = jh / mcuh;
+    //-- calculate mcu info
+
+    // create yuv buffer for decoding
+    yuv_stride[0] = jw;
+    yuv_stride[1] = jw * jfif->comp_info[1].samp_factor_h / sfh_max;
+    yuv_stride[2] = jw * jfif->comp_info[2].samp_factor_h / sfh_max;
+    yuv_stride[3] = jw * jfif->comp_info[3].samp_factor_h / sfh_max;
+    yuv_height[0] = jh;
+    yuv_height[1] = jh * jfif->comp_info[1].samp_factor_v / sfv_max;
+    yuv_height[2] = jh * jfif->comp_info[2].samp_factor_v / sfv_max;
+    yuv_height[3] = jh * jfif->comp_info[3].samp_factor_v / sfv_max;
+    yuv_datbuf[0] = malloc(sizeof(int) * yuv_stride[0] * yuv_height[0]);
+    yuv_datbuf[1] = malloc(sizeof(int) * yuv_stride[1] * yuv_height[1]);
+    yuv_datbuf[2] = malloc(sizeof(int) * yuv_stride[2] * yuv_height[2]);
+    yuv_datbuf[3] = malloc(sizeof(int) * yuv_stride[3] * yuv_height[3]);
+    if (!yuv_datbuf[0] || !yuv_datbuf[1] || !yuv_datbuf[2] || !yuv_datbuf[3]) {
+        goto done;
+    }
+
+    // open bit stream
+    bs = bitstr_open(jfif->databuf, "mem", jfif->datalen);
+    if (!bs) {
+        printf("failed to open bitstr for jfif_decode !");
+        return -1;
+    }
+
+    // init huffman codec
+    for (i=0; i<16; i++) {
+        if (jfif->phcac[i]) {
+            jfif->phcac[i]->input = bs;
+            huffman_decode_init(jfif->phcac[i]);
+        }
+        if (jfif->phcdc[i]) {
+            jfif->phcdc[i]->input = bs;
+            huffman_decode_init(jfif->phcdc[i]);
+        }
+    }
+
+    for (mcui=0; mcui<mcuc*mcur; mcui++) {
+        for (c=0; c<jfif->comp_num; c++) {
+            for (v=0; v<jfif->comp_info[c].samp_factor_v; v++) {
+                for (h=0; h<jfif->comp_info[c].samp_factor_h; h++) {
+                    HUFCODEC *hcac = jfif->phcac[jfif->comp_info[c].htab_idx_ac];
+                    HUFCODEC *hcdc = jfif->phcdc[jfif->comp_info[c].htab_idx_dc];
+                    int       fidx = jfif->comp_info[c].qtab_idx;
+                    int size, znum, code;
+                    int du[64] = {0};
+
+                    //+ decode dc
+                    size = huffman_decode_step(hcdc) & 0xf;
+                    if (size) {
+                        code = bitstr_get_bits(bs  , size);
+                        code = category_decode(code, size);
+                    }
+                    else {
+                        code = 0;
+                    }
+                    dc[c] += code;
+                    du[0]  = dc[c];
+                    //- decode dc
+
+                    //+ decode ac
+                    for (i=1; i<64; ) {
+                        code = huffman_decode_step(hcac);
+                        if (code <= 0) break;
+                        size = (code >> 0) & 0xf;
+                        znum = (code >> 4) & 0xf;
+                        i   += znum;
+                        code = bitstr_get_bits(bs  , size);
+                        code = category_decode(code, size);
+                        if (i < 64) du[i++] = code;
+                    }
+                    //- decode ac
+
+                    // de-zigzag
+                    zigzag_decode(du);
+
+                    // idct
+                    idct2d8x8(du, ftab[fidx]);
+
+                    // copy du to yuv buffer
+                    x    = ((mcui % mcuc) * mcuw + h * 8) * jfif->comp_info[c].samp_factor_h / sfh_max;
+                    y    = ((mcui / mcuc) * mcuh + v * 8) * jfif->comp_info[c].samp_factor_v / sfv_max;
+                    idst = yuv_datbuf[c] + y * yuv_stride[c] + x;
+                    isrc = du;
+                    for (i=0; i<8; i++) {
+                        memcpy(idst, isrc, 8 * sizeof(int));
+                        idst += yuv_stride[c];
+                        isrc += 8;
+                    }
+                }
+            }
+        }
+    }
+
+    // close huffman codec
+    for (i=0; i<16; i++) {
+        if (jfif->phcac[i]) huffman_decode_done(jfif->phcac[i]);
+        if (jfif->phcdc[i]) huffman_decode_done(jfif->phcdc[i]);
+    }
+
+    // close bit stream
+    bitstr_close(bs);
+
+ 
+    ysrc = yuv_datbuf[0];
+    *width = jfif->width;
+    *height = jfif->height;
+    *data = (BYTE*)malloc(jfif->width * jfif->height * 3);
+
+    BYTE* bdst = *data;
+    for (i=0; i<jfif->height; i++) {
+        int uy = i * jfif->comp_info[1].samp_factor_v / sfv_max;
+        int vy = i * jfif->comp_info[2].samp_factor_v / sfv_max;
+        for (j=0; j<jfif->width; j++) {
+            int ux = j * jfif->comp_info[1].samp_factor_h / sfh_max;
+            int vx = j * jfif->comp_info[2].samp_factor_h / sfh_max;
+            usrc = yuv_datbuf[1] + uy * yuv_stride[1] + ux;
+            vsrc = yuv_datbuf[2] + vy * yuv_stride[2] + vx;
+            yuv_to_rgb(*ysrc, *usrc, *vsrc, bdst + 2, bdst + 1, bdst + 0);
+            bdst += 3;
+            ysrc += 1;
+        }
+        ysrc -= jfif->width * 1;
+        ysrc += yuv_stride[0];
+    }
+
+    // success
+    ret = 0;
+
+done:
+    if (yuv_datbuf[0]) free(yuv_datbuf[0]);
+    if (yuv_datbuf[1]) free(yuv_datbuf[1]);
+    if (yuv_datbuf[2]) free(yuv_datbuf[2]);
+    if (yuv_datbuf[3]) free(yuv_datbuf[3]);
+    //++ free ftab
+    for (i=0; i<16; i++) {
+        if (ftab[i]) {
+            free(ftab[i]);
+        }
+    }
+    //-- free ftab
+    return ret;
+}
 
 
+int jfif_decode_rgb(void *ctxt, uint8_t **data, int *width, int *height)
+{
+    JFIF *jfif    = (JFIF*)ctxt;
+    void *bs      = NULL;
+    int  *ftab[16]= {0};
+    int   dc[4]   = {0};
+    int   mcuw, mcuh, mcuc, mcur, mcui, jw, jh;
+    int   i, j, c, h, v, x, y;
+    int   sfh_max = 0;
+    int   sfv_max = 0;
+    int   yuv_stride[4] = {0};
+    int   yuv_height[4] = {0};
+    int  *yuv_datbuf[4] = {0};
+    int  *idst, *isrc;
+    int  *ysrc, *usrc, *vsrc;
+    int   ret = -1;
 
+    if (!ctxt) {
+        printf("invalid input params !\n");
+        return -1;
+    }
 
+    // init dct module
+    init_dct_module();
 
+    //++ init ftab
+    for (i=0; i<16; i++) {
+        if (jfif->pqtab[i]) {
+            ftab[i] = malloc(64 * sizeof(int));
+            if (ftab[i]) {
+                init_idct_ftab(ftab[i], jfif->pqtab[i]);
+            } else {
+                goto done;
+            }
+        }
+    }
+    //-- init ftab
+
+    //++ calculate mcu info
+    for (c=0; c<jfif->comp_num; c++) {
+        if (sfh_max < jfif->comp_info[c].samp_factor_h) {
+            sfh_max = jfif->comp_info[c].samp_factor_h;
+        }
+        if (sfv_max < jfif->comp_info[c].samp_factor_v) {
+            sfv_max = jfif->comp_info[c].samp_factor_v;
+        }
+    }
+    if (!sfh_max) sfh_max = 1;
+    if (!sfv_max) sfv_max = 1;
+    mcuw = sfh_max * 8;
+    mcuh = sfv_max * 8;
+    jw = ALIGN(jfif->width , mcuw);
+    jh = ALIGN(jfif->height, mcuh);
+    mcuc = jw / mcuw;
+    mcur = jh / mcuh;
+    //-- calculate mcu info
+
+    // create yuv buffer for decoding
+    yuv_stride[0] = jw;
+    yuv_stride[1] = jw * jfif->comp_info[1].samp_factor_h / sfh_max;
+    yuv_stride[2] = jw * jfif->comp_info[2].samp_factor_h / sfh_max;
+    yuv_stride[3] = jw * jfif->comp_info[3].samp_factor_h / sfh_max;
+    yuv_height[0] = jh;
+    yuv_height[1] = jh * jfif->comp_info[1].samp_factor_v / sfv_max;
+    yuv_height[2] = jh * jfif->comp_info[2].samp_factor_v / sfv_max;
+    yuv_height[3] = jh * jfif->comp_info[3].samp_factor_v / sfv_max;
+    yuv_datbuf[0] = malloc(sizeof(int) * yuv_stride[0] * yuv_height[0]);
+    yuv_datbuf[1] = malloc(sizeof(int) * yuv_stride[1] * yuv_height[1]);
+    yuv_datbuf[2] = malloc(sizeof(int) * yuv_stride[2] * yuv_height[2]);
+    yuv_datbuf[3] = malloc(sizeof(int) * yuv_stride[3] * yuv_height[3]);
+    if (!yuv_datbuf[0] || !yuv_datbuf[1] || !yuv_datbuf[2] || !yuv_datbuf[3]) {
+        goto done;
+    }
+
+    // open bit stream
+    bs = bitstr_open(jfif->databuf, "mem", jfif->datalen);
+    if (!bs) {
+        printf("failed to open bitstr for jfif_decode !");
+        return -1;
+    }
+
+    // init huffman codec
+    for (i=0; i<16; i++) {
+        if (jfif->phcac[i]) {
+            jfif->phcac[i]->input = bs;
+            huffman_decode_init(jfif->phcac[i]);
+        }
+        if (jfif->phcdc[i]) {
+            jfif->phcdc[i]->input = bs;
+            huffman_decode_init(jfif->phcdc[i]);
+        }
+    }
+
+    for (mcui=0; mcui<mcuc*mcur; mcui++) {
+        for (c=0; c<jfif->comp_num; c++) {
+            for (v=0; v<jfif->comp_info[c].samp_factor_v; v++) {
+                for (h=0; h<jfif->comp_info[c].samp_factor_h; h++) {
+                    HUFCODEC *hcac = jfif->phcac[jfif->comp_info[c].htab_idx_ac];
+                    HUFCODEC *hcdc = jfif->phcdc[jfif->comp_info[c].htab_idx_dc];
+                    int       fidx = jfif->comp_info[c].qtab_idx;
+                    int size, znum, code;
+                    int du[64] = {0};
+
+                    //+ decode dc
+                    size = huffman_decode_step(hcdc) & 0xf;
+                    if (size) {
+                        code = bitstr_get_bits(bs  , size);
+                        code = category_decode(code, size);
+                    }
+                    else {
+                        code = 0;
+                    }
+                    dc[c] += code;
+                    du[0]  = dc[c];
+                    //- decode dc
+
+                    //+ decode ac
+                    for (i=1; i<64; ) {
+                        code = huffman_decode_step(hcac);
+                        if (code <= 0) break;
+                        size = (code >> 0) & 0xf;
+                        znum = (code >> 4) & 0xf;
+                        i   += znum;
+                        code = bitstr_get_bits(bs  , size);
+                        code = category_decode(code, size);
+                        if (i < 64) du[i++] = code;
+                    }
+                    //- decode ac
+
+                    // de-zigzag
+                    zigzag_decode(du);
+
+                    // idct
+                    idct2d8x8(du, ftab[fidx]);
+
+                    // copy du to yuv buffer
+                    x    = ((mcui % mcuc) * mcuw + h * 8) * jfif->comp_info[c].samp_factor_h / sfh_max;
+                    y    = ((mcui / mcuc) * mcuh + v * 8) * jfif->comp_info[c].samp_factor_v / sfv_max;
+                    idst = yuv_datbuf[c] + y * yuv_stride[c] + x;
+                    isrc = du;
+                    for (i=0; i<8; i++) {
+                        memcpy(idst, isrc, 8 * sizeof(int));
+                        idst += yuv_stride[c];
+                        isrc += 8;
+                    }
+                }
+            }
+        }
+    }
+
+    // close huffman codec
+    for (i=0; i<16; i++) {
+        if (jfif->phcac[i]) huffman_decode_done(jfif->phcac[i]);
+        if (jfif->phcdc[i]) huffman_decode_done(jfif->phcdc[i]);
+    }
+
+    // close bit stream
+    bitstr_close(bs);
+
+ 
+    ysrc = yuv_datbuf[0];
+    *width = jfif->width;
+    *height = jfif->height;
+    *data = (BYTE*)malloc(jfif->width * jfif->height * 3);
+
+    BYTE* bdst = *data;
+    for (i=0; i<jfif->height; i++) {
+        int uy = i * jfif->comp_info[1].samp_factor_v / sfv_max;
+        int vy = i * jfif->comp_info[2].samp_factor_v / sfv_max;
+        for (j=0; j<jfif->width; j++) {
+            int ux = j * jfif->comp_info[1].samp_factor_h / sfh_max;
+            int vx = j * jfif->comp_info[2].samp_factor_h / sfh_max;
+            usrc = yuv_datbuf[1] + uy * yuv_stride[1] + ux;
+            vsrc = yuv_datbuf[2] + vy * yuv_stride[2] + vx;
+            yuv_to_rgb(*ysrc, *vsrc, *usrc, bdst + 2, bdst + 1, bdst + 0);
+            bdst += 3;
+            ysrc += 1;
+        }
+        ysrc -= jfif->width * 1;
+        ysrc += yuv_stride[0];
+    }
+
+    // success
+    ret = 0;
+
+done:
+    if (yuv_datbuf[0]) free(yuv_datbuf[0]);
+    if (yuv_datbuf[1]) free(yuv_datbuf[1]);
+    if (yuv_datbuf[2]) free(yuv_datbuf[2]);
+    if (yuv_datbuf[3]) free(yuv_datbuf[3]);
+    //++ free ftab
+    for (i=0; i<16; i++) {
+        if (ftab[i]) {
+            free(ftab[i]);
+        }
+    }
+    //-- free ftab
+    return ret;
+}
