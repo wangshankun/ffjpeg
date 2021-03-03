@@ -1,12 +1,12 @@
-/* °üº¬Í·ÎÄ¼þ */
+/* ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ */
 #include "stdefine.h"
 #include "dct.h"
 
-#if 1 /* ¿ìËÙµÄÕûÊýÔËËã°æ±¾ */
-/* ÄÚ²¿³£Á¿¶¨Òå */
+#if 1 /* ï¿½ï¿½ï¿½Ùµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ±¾ */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #define DCTSIZE  8
 
-/* ÄÚ²¿È«¾Ö±äÁ¿¶¨Òå */
+/* ï¿½Ú²ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 static const float AAN_DCT_FACTOR[DCTSIZE] = {
     1.0f, 1.387039845f, 1.306562965f, 1.175875602f,
     1.0f, 0.785694958f, 0.541196100f, 0.275899379f,
@@ -74,7 +74,6 @@ void init_idct_ftab(int *ftab, int *qtab)
     }
 }
 
-/* º¯ÊýÊµÏÖ */
 void fdct2d8x8(int *data, int *ftab)
 {
     int tmp0,  tmp1,  tmp2,  tmp3;
@@ -334,12 +333,12 @@ void idct2d8x8(int *data, int *ftab)
 }
 #endif
 
-#if 0 /* ¿ìËÙµÄ¸¡µãÊýÔËËã°æ±¾ */
+#if 0 /* ï¿½ï¿½ï¿½ÙµÄ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ±¾ */
 
-/* ÄÚ²¿³£Á¿¶¨Òå */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #define DCTSIZE  8
 
-/* ÄÚ²¿È«¾Ö±äÁ¿¶¨Òå */
+/* ï¿½Ú²ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 static float aandctfactor[DCTSIZE] = {
     1.0f, 1.387039845f, 1.306562965f, 1.175875602f,
     1.0f, 0.785694958f, 0.541196100f, 0.275899379f,
@@ -347,7 +346,7 @@ static float aandctfactor[DCTSIZE] = {
 
 static float dctfactor[64] = {0};
 
-/* ÄÚ²¿º¯ÊýÊµÏÖ */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ */
 static initdctfactor()
 {
     int i, j;
@@ -356,7 +355,7 @@ static initdctfactor()
             dctfactor[i * 8 + j] = aandctfactor[i] * aandctfactor[j];
 }
 
-/* º¯ÊýÊµÏÖ */
+/* ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ */
 void fdct2d8x8(float *data)
 {
     float tmp0, tmp1, tmp2, tmp3;
@@ -608,28 +607,28 @@ static void dcttest(void)
 
 #endif
 
-#if 0 /* ¾ØÕó±ä»»°æ±¾ */
-/* ÄÚ²¿³£Á¿¶¨Òå */
+#if 0 /* ï¿½ï¿½ï¿½ï¿½ä»»ï¿½æ±¾ */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #define M_PI  3.14159265358979323846f
 
-/* ÄÚ²¿È«¾Ö±äÁ¿¶¨Òå */
-static float fdctmatrix[8][8] = {0};  /* fdct ±ä»»¾ØÕó */
-static float idctmatrix[8][8] = {0};  /* idct ±ä»»¾ØÕó */
+/* ï¿½Ú²ï¿½È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+static float fdctmatrix[8][8] = {0};  /* fdct ï¿½ä»»ï¿½ï¿½ï¿½ï¿½ */
+static float idctmatrix[8][8] = {0};  /* idct ï¿½ä»»ï¿½ï¿½ï¿½ï¿½ */
 
-/* ÄÚ²¿º¯Êý¶¨Òå */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 static float c(int u)
 {
     if (u == 0) return (float)sqrt(1.0f / 8.0f);
     else        return (float)sqrt(2.0f / 8.0f);
 }
 
-/* ³õÊ¼»¯ dct ±ä»»¾ØÕó */
+/* ï¿½ï¿½Ê¼ï¿½ï¿½ dct ï¿½ä»»ï¿½ï¿½ï¿½ï¿½ */
 void initdctmatrix(void)
 {
     static int inited = 0;
     int    u, x;
 
-    /* ±ÜÃâÖØ¸´³õÊ¼»¯ */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ */
     if (inited) return;
 
     /* init fdct matrix */
@@ -691,27 +690,27 @@ void fdct2d8x8(float *data)
     float temp[64];
     int   i, j;
 
-    /* ³õÊ¼»¯±ä»»¾ØÕó */
+    /* ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ä»»ï¿½ï¿½ï¿½ï¿½ */
     initdctmatrix();
 
-    /* ÖðÐÐ½øÐÐ 1d fdct */
+    /* ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ 1d fdct */
     for (i=0; i<8; i++)
     {
         fdct1d8(temp + 8 * i, data + 8 * i);
     }
 
-    /* ×ªÖÃ¾ØÕó */
+    /* ×ªï¿½Ã¾ï¿½ï¿½ï¿½ */
     for (i=0; i<8; i++)
         for (j=0; j<8; j++)
             *(data + 8 * i + j) = *(temp + 8 * j + i);
 
-    /* ÖðÐÐ½øÐÐ 1d fdct */
+    /* ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ 1d fdct */
     for (i=0; i<8; i++)
     {
         fdct1d8(temp + 8 * i, data + 8 * i);
     }
 
-    /* ×ªÖÃ¾ØÕó */
+    /* ×ªï¿½Ã¾ï¿½ï¿½ï¿½ */
     for (i=0; i<8; i++)
         for (j=0; j<8; j++)
             *(data + 8 * i + j) = *(temp + 8 * j + i);
@@ -723,38 +722,38 @@ void idct2d8x8(float *data)
     float temp[64];
     int   i, j;
 
-    /* ³õÊ¼»¯±ä»»¾ØÕó */
+    /* ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ä»»ï¿½ï¿½ï¿½ï¿½ */
     initdctmatrix();
 
-    /* ÖðÐÐ½øÐÐ 1d idct */
+    /* ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ 1d idct */
     for (i=0; i<8; i++)
     {
         idct1d8(temp + 8 * i, data + 8 * i);
     }
 
-    /* ×ªÖÃ¾ØÕó */
+    /* ×ªï¿½Ã¾ï¿½ï¿½ï¿½ */
     for (i=0; i<8; i++)
         for (j=0; j<8; j++)
             *(data + 8 * i + j) = *(temp + 8 * j + i);
 
-    /* ÖðÐÐ½øÐÐ 1d idct */
+    /* ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ 1d idct */
     for (i=0; i<8; i++)
     {
         idct1d8(temp + 8 * i, data + 8 * i);
     }
 
-    /* ×ªÖÃ¾ØÕó */
+    /* ×ªï¿½Ã¾ï¿½ï¿½ï¿½ */
     for (i=0; i<8; i++)
         for (j=0; j<8; j++)
             *(data + 8 * i + j) = *(temp + 8 * j + i);
 }
 #endif
 
-#if 0 /* ÊýÑ§±í´ïÊ½°æ±¾ */
-/* ÄÚ²¿³£Á¿¶¨Òå */
+#if 0 /* ï¿½ï¿½Ñ§ï¿½ï¿½ï¿½ï¿½Ê½ï¿½æ±¾ */
+/* ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #define M_PI  3.14159265358979323846f
 
-/* º¯ÊýÊµÏÖ */
+/* ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ */
 static float alpha(int n)
 {
     if (n == 0) return 1.0f / (float)sqrt(8);

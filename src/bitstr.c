@@ -1,15 +1,15 @@
-// 包含头文件
+// 锟斤拷锟斤拷头锟侥硷拷
 #include <stdlib.h>
 #include <string.h>
 #include "stdefine.h"
 #include "bitstr.h"
 
-// 预编译开关
+// 预锟斤拷锟诫开锟斤拷
 #define USE_JPEG_BITSTR  1
 
 //+++ memory bitstr +++//
 
-/* 内部类型定义 */
+/* 锟节诧拷锟斤拷锟酵讹拷锟斤拷 */
 enum {
     BITSTR_MEM = 0,
     BITSTR_FILE,
@@ -24,7 +24,7 @@ typedef struct {
     int   curpos;
 } MBITSTR;
 
-/* 函数实现 */
+/* 锟斤拷锟斤拷实锟斤拷 */
 static void* mbitstr_open(void *buf, int len)
 {
     MBITSTR *context = calloc(1, sizeof(MBITSTR));
@@ -91,7 +91,7 @@ static int mbitstr_flush(void *stream) { return stream ? 0 : EOF; }
 
 //+++ file bitstr +++//
 
-/* 内部类型定义 */
+/* 锟节诧拷锟斤拷锟酵讹拷锟斤拷 */
 typedef struct {
     int   type;
     DWORD bitbuf;
@@ -99,7 +99,7 @@ typedef struct {
     FILE *fp;
 } FBITSTR;
 
-/* 函数实现 */
+/* 锟斤拷锟斤拷实锟斤拷 */
 static void* fbitstr_open(char *file, char *mode)
 {
     FBITSTR *context = calloc(1, sizeof(FBITSTR));
@@ -170,9 +170,6 @@ static int fbitstr_flush(void *stream)
 
 //--- file bitstr --//
 
-
-
-// 函数实现
 void* bitstr_open(void *fnamebuf, char *fmode, int bufsize)
 {
     if (strcmp(fmode, "mem") == 0) {

@@ -12,7 +12,6 @@ OBJS = \
     zigzag.o  \
     bitstr.o  \
     huffman.o \
-    bmp.o     \
     jfif.o
 
 LIB  = libffjpeg.a
